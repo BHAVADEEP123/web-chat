@@ -1,3 +1,4 @@
+
 :root{
     --mainBgColor:rgba(20,20,31,11);
     --secondaryBgColor:rgba(27,27,39,1);
@@ -38,7 +39,13 @@ body{
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
 }
+
+.login-container{
+  background-color: grey;
+}
+
 
 .form--wrapper{
   width: 600px;
