@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import React from "react";
 import { ID } from "appwrite";
+import { Query } from "appwrite";
 import '../styles/Room.css'
 import {
   databases,
@@ -14,7 +15,7 @@ import { useAuth } from "../utils/AuthContext";
 
 function Room() {
   const {user,handleUserLogin,handleUserLogout} = useAuth()
-  console.log('user:',user)
+  console.log('user id:',user.$id)
   const [messages, setMessages] = useState([]);
   const [messageBody, setMessageBody] = useState("");
   useEffect(() => {
@@ -34,8 +35,6 @@ function Room() {
 
   const deleteMessage = async (messageId) => {
     const promise = databases.deleteDocument(DATABASEID, COLLECTIONID_MESSAGES, messageId);
-    // console.log("Deleted:", promise);
-    // setMessages(messages.filter(message => message.$id !== messageId))
   }
 
   const handleSubmit = async (e) => {
@@ -59,9 +58,12 @@ function Room() {
   const getMessages = async () => {
     const response = await databases.listDocuments(
       DATABASEID,
-      COLLECTIONID_MESSAGES
+      COLLECTIONID_MESSAGES,
+      // [
+      //   Query.equal('from_user',user.$id),
+      // ]
     );
-    // console.log(response);
+    console.log(response);
     setMessages(response.documents);
   };
 

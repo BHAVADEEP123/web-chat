@@ -1,11 +1,11 @@
-.login-page{
+.signup-page{
     background-color: rgba(27, 27, 39, 1);
     align-items: center;
     height: 100vh;
     display: flex;
 }
 
-.login-container {
+.signup-container {
     width: 300px;
     margin: 0 auto;
     padding: 20px;
@@ -15,7 +15,7 @@
     color: white;
   }
   
-  .login-container h2 {
+  .signup-container h2 {
     text-align: center;
     margin-bottom: 20px;
   }
@@ -36,7 +36,7 @@
     border-radius: 5px;
   }
   
-  .login-btn {
+  .signup-btn {
     display: block;
     width: 100%;
     padding: 10px;
@@ -46,19 +46,32 @@
     color: black;
   }
   
-  .login-btn:hover {
+  .signup-btn:hover {
     background-color: #ccc;
     cursor: pointer;
   }
 
-  .redirectSignup{
+  .redirectSignin{
     margin: 10px;
   }
   
-  .redirectSignup span{
+  .redirectSignin span{
     color: pink;
   }
 
-  .redirectSignup span:hover{
+  .redirectSignin span:hover{
     cursor: pointer;
   }
+
+  .userTag{
+    display: flex;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield; /* Firefox */
+}

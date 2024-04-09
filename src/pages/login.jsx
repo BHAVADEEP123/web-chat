@@ -19,8 +19,11 @@ const login = () => {
   const handleSubmit = ()=>{
     console.log(userEmail)
     console.log(password)
-    
   }
+
+  const handleSignUpRedirect = () => {
+    navigate('/signup');
+  };
   
   return (
     <div className="login-page">
@@ -37,6 +40,9 @@ const login = () => {
           </div>
           <button type="button" className="login-btn login-btn-primary" onClick={(e)=>{handleUserLogin(e,userEmail,password)}}>Login</button>
         </form>
+        <div className="redirectSignup">
+        <p>Not a user? <span onClick={handleSignUpRedirect}>Sign up</span></p>
+        </div>
       </div>
     </div>
   );
