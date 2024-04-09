@@ -1,0 +1,243 @@
+.container {
+    display: flex;
+    background-color: rgba(27, 27, 39, 1);
+    color: white;
+    position: relative;
+    height: 100vh;
+    flex-direction: column;
+    /* overflow: hidden; */
+}
+
+
+.friendList,
+.chatroom {
+    padding: 10px;
+    height: 80vh;
+    overflow-y: auto;
+    /* margin:20px; */
+    /* margin-bottom: 0; */
+    padding: 10px;
+}
+
+.friendList {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    z-index: 1;
+    overflow-y: auto;
+    transition: width 0.3s ease, opacity 0.3s ease;
+    width: 0;
+    opacity: 0;
+    background-color: rgb(32, 32, 45);
+}
+
+.friendList.visible {
+    width: 300px;
+    opacity: 1;
+    margin-right: 20px;
+}
+
+.chatroom {
+    flex: 1;
+}
+
+.toggleButton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    margin: 20px;
+    margin-top: 12px;
+    border: 1px solid white;
+    height: 50px;
+    border-radius: 5px;
+}
+
+.friendListContent li{
+    padding: 20px;
+    border: 1px solid white;
+    list-style-type: none;
+}
+
+.box {
+    display: inline-block;
+    width: 250px;
+    height: 50px;
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid #ccc;
+    display: flex;
+    /* justify-content: space-between; */
+    align-items: center;
+    margin: 2px;
+  }
+  .profile-box {
+    display: inline-block;
+    width: 250px;
+    height: 50px;
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+    /* cursor: pointer; */
+    transition: all 0.2s ease;
+    border: 2px solid #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2px;
+  }
+  
+  .user-icon img{
+    width: 30px;
+    height: 30px;
+    margin-right: 20px;
+  }
+
+  .user-name{
+    align-items: center;
+  }
+  /* .box:hover {
+    background-color: #e0e0e0;
+    border: 2px solid #ccc;
+    border-color: #aaa;
+    color: rgb(32, 32, 45);
+  } */
+
+  .addFriend{
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    display: flex;
+  }
+
+  .input-container {
+    position: relative;
+    margin: 1px
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    border-bottom: 2px solid #ccc;
+    outline: none;
+    color: white;
+    background-color: rgb(32, 32, 45);
+  }
+  
+  .input-field:focus {
+    border-bottom-color: #ffffff; /* Change color on focus */
+    background-color: rgb(0, 0, 0,0.5);
+  }
+  
+  .line {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #ffffff; /* Line color */
+  }
+  
+  .addbutton{
+    margin: 3px;
+    margin-top: 9px;
+  }
+
+  .addbutton:hover{
+    cursor: pointer;
+  }
+
+  .friends-section{
+    /* background-color: white; */
+    color:white;
+    /* align-items: center; */
+    justify-content: center;
+  }
+
+  .sender{
+    max-width: 85%;
+    display: flex;
+    margin:10px
+  }
+  .sendbox {
+    position: relative;
+    margin-bottom: 20px;
+    background-color: rgba(27, 27, 39, 1);
+    border-radius: 10px;
+    flex: 7;
+  }
+  
+  .sendbox textarea {
+    width: 100%;
+    min-height: 40px;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    outline: none;
+    resize: none; /* Prevent resizing */
+    background-color: white; /* Transparent background */
+    color: #333; /* Text color */
+    border-radius: 10px;
+  }
+  
+  .sendbox textarea:focus {
+    border-color: #494949; /* Border color on focus */
+  }
+  
+  .sendbox textarea::placeholder {
+    color: rgba(0, 0, 0, 0.5); /* Placeholder color */
+  }
+  
+  .send-btn{
+    flex:1;
+    padding: 10px;
+    padding-top: 13px;
+  }
+
+  .send-btn:hover{
+    cursor: pointer;
+  }
+
+  /* messages css */
+  .text-message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    max-width: 74%;
+  }
+  
+  .message--body {
+    max-width: 70%; /* Set maximum width for the message body */
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(27, 27, 39, 1);
+    position: relative;
+  }
+  
+  .message-timestamp {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    font-size: 8px;
+    color: #999;
+  }
+
+  .trash-button{
+    margin-top: 10px;
+  }

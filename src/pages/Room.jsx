@@ -1,42 +1,59 @@
 import { useEffect, useState } from "react";
 import React from "react";
 import { ID } from "appwrite";
+import '../styles/Room.css'
 import {
   databases,
   DATABASEID,
   COLLECTIONID_MESSAGES,
 } from "../appwriteConfig"
-import {Trash} from 'react-feather'
+import { Trash } from 'react-feather'
+import { ChevronLeft, ChevronRight, UserPlus, Send, LogOut } from 'react-feather'
+import client from "../appwriteConfig";
+import { useAuth } from "../utils/AuthContext";
 
 function Room() {
+  const {user,handleUserLogin,handleUserLogout} = useAuth()
+  console.log('user:',user)
   const [messages, setMessages] = useState([]);
   const [messageBody, setMessageBody] = useState("");
   useEffect(() => {
     getMessages();
+    const unsubscribe =client.subscribe(`databases.${DATABASEID}.collections.${COLLECTIONID_MESSAGES}.documents`,response=>{
+      if(response.events.includes('databases.*.collections.*.documents.*.create')){
+        setMessages(prevState=>[...prevState,response.payload]);
+      }
+      if(response.events.includes('databases.*.collections.*.documents.*.delete')){
+        setMessages(messages.filter(message => message.$id !== response.payload.$id));
+      }
+    });
+    return()=>{
+      unsubscribe();
+    }
   }, []);
 
   const deleteMessage = async (messageId) => {
     const promise = databases.deleteDocument(DATABASEID, COLLECTIONID_MESSAGES, messageId);
     // console.log("Deleted:", promise);
-    setMessages(messages.filter(message=> message.$id !== messageId))
+    // setMessages(messages.filter(message => message.$id !== messageId))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if(messageBody){
-        let payload = {
-            message: messageBody,
-          };
-          const response = await databases.createDocument(
-            DATABASEID,
-            COLLECTIONID_MESSAGES,
-            ID.unique(),
-            payload
-          );
-          setMessageBody('');
-          getMessages()
+    if (messageBody) {
+      let payload = {
+        message: messageBody,
+      };
+      const response = await databases.createDocument(
+        DATABASEID,
+        COLLECTIONID_MESSAGES,
+        ID.unique(),
+        payload
+      );
+      setMessageBody('');
+      // setMessages(prevState=>[response,...prevState])
     }
-    
+
   };
 
   const getMessages = async () => {
@@ -44,47 +61,106 @@ function Room() {
       DATABASEID,
       COLLECTIONID_MESSAGES
     );
-    console.log(response);
+    // console.log(response);
     setMessages(response.documents);
   };
+
+  const [showFriendList, setShowFriendList] = useState(false);
+
+  const toggleFriendList = () => {
+    setShowFriendList(!showFriendList);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' ) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
     <>
-      <main className="container">
-        <div className="room--container">
-        
-          
-          <div>
+      <div className="container">
+        <div className="chatroom">
+          <div className="chats">
             {messages.map((messageObj) => (
-              <div key={messageObj.$id} className="message--wrapper">
-                <div className="message--header">
-                  <small className="message-timestamp">
-                  {new Date(messageObj.$createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </small>
-                </div>
+              <div key={messageObj.$id} className="text-message">
                 <div className="message--body">
+                  <div className="message-timestamp">
+                    {new Date(messageObj.$createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
                   <span>{messageObj.message}</span>
-                  
                 </div>
-                <Trash className="delete--btn" size={16} onClick={()=>{deleteMessage(messageObj.$id)}}/>
+                <div className="trash-button">
+                  <Trash className="delete--btn" size={16} onClick={() => { deleteMessage(messageObj.$id) }} />
+                </div>
               </div>
             ))}
           </div>
-          <form id="message--form">
-            <div>
+
+        </div>
+        <form>
+          <div className="sender">
+            <div className="sendbox">
               <textarea
                 required
                 maxLength="1000"
+                onKeyDown={handleKeyDown}
                 placeholder="Say something..."
                 value={messageBody}
-                onChange={(e)=>{setMessageBody(e.target.value)}}
+                onChange={(e) => { setMessageBody(e.target.value) }}
               ></textarea>
             </div>
-            <div className="send-btn--wrapper">
-            <input className="btn btn--secondary" type="submit" value="Send" onClick={handleSubmit}/>
+            <div className="send-btn">
+              <Send color="white" onClick={handleSubmit} />
+            </div>
           </div>
-          </form>
+        </form>
+        <div className={`friendList ${showFriendList ? 'visible' : ''}`}>
+          {/* profile */}
+          <div className="profile-box">
+            <div className="user-icon">
+              <img src="https://iili.io/JNkdzyx.png" alt="male user"></img>
+            </div>
+            <div className="user-name">
+              Bhavadeep
+            </div>
+            <LogOut color="white" cursor="pointer" onClick={handleUserLogout}/>
+          </div>
+          {/* friends */}
+          <div className="friends-section">
+            <h3>Friends</h3>
+          </div>
+          <div className="friendListContent">
+            <div className="box">
+              <div className="user-icon">
+                <img src="https://iili.io/JNkdzyx.png" alt="male user"></img>
+              </div>
+              <div className="user-name">
+                Bhavadeep
+              </div>
+            </div>
+          </div>
+          {/* add-friend section */}
+
+          <div className="addFriend">
+            <div className="input-container">
+              <input type="text" className="input-field" placeholder="User Id" />
+              <div className="line"></div>
+            </div>
+            <div className="input-container">
+              <input type="text" className="input-field" placeholder="Hashtag" />
+              <div className="line"></div>
+            </div>
+            <div className="addbutton">
+              <UserPlus color="white" />
+            </div>
+          </div>
         </div>
-      </main>
+        <button className="toggleButton" onClick={toggleFriendList}>
+          {showFriendList ? <ChevronRight color="white" /> : <ChevronLeft color="white" />}
+        </button>
+      </div>
     </>
   );
 }
