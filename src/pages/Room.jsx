@@ -7,6 +7,7 @@ import {
   databases,
   DATABASEID,
   COLLECTIONID_MESSAGES,
+  COLLECTIONID_PROFILES,
 } from "../appwriteConfig"
 import { Trash } from 'react-feather'
 import { ChevronLeft, ChevronRight, UserPlus, Send, LogOut } from 'react-feather'
@@ -15,17 +16,23 @@ import { useAuth } from "../utils/AuthContext";
 
 function Room() {
   const {user,handleUserLogin,handleUserLogout} = useAuth()
-  console.log('user id:',user.$id)
-  const [messages, setMessages] = useState([]);
+  // console.log('user id:',user.$id)
+  const [messagesByMe, setMessagesByMe] = useState([]);
+  const [messagesToMe, setMessagesToMe] = useState([]);
   const [messageBody, setMessageBody] = useState("");
+  const [profile, setProfile] = useState(null);
+  const [friendsUserIds, setFriendsUserIds] = useState([]);
+  const [friends,setFriends] = useState([]);
   useEffect(() => {
     getMessages();
+    getProfileData();
     const unsubscribe =client.subscribe(`databases.${DATABASEID}.collections.${COLLECTIONID_MESSAGES}.documents`,response=>{
       if(response.events.includes('databases.*.collections.*.documents.*.create')){
-        setMessages(prevState=>[...prevState,response.payload]);
+        setMessagesByMe(prevState=>[...prevState,response.payload]);
       }
       if(response.events.includes('databases.*.collections.*.documents.*.delete')){
-        setMessages(messages.filter(message => message.$id !== response.payload.$id));
+        setMessagesByMe(messagesByMe.filter(message => message.$id !== response.payload.$id));
+        setMessagesToMe(messagesByMe.filter(message => message.$id !== response.payload.$id));
       }
     });
     return()=>{
@@ -50,21 +57,79 @@ function Room() {
         payload
       );
       setMessageBody('');
-      // setMessages(prevState=>[response,...prevState])
+      // setMessagesByMe(prevState=>[response,...prevState])
     }
 
   };
+
+  const getProfileData = async () =>{
+    // const response = await databases.listDocuments(
+    //   DATABASEID,
+    //   COLLECTIONID_PROFILES,
+    //   [
+    //     Query.equal('userId',user.$id)
+    //   ]
+    // )
+    // setFriendsUserIds(response.documents[0]['friends'])
+    // console.log("My profile:", response)
+    // console.log("My friends:", friendsUserIds)
+    // await Promise.all(friendsUserIds.map(async (friendsUserId)=>{
+    //   const friendUserResponse = await databases.listDocuments(
+    //     DATABASEID,
+    //     COLLECTIONID_PROFILES,
+    //     [
+    //       Query.equal('userId',friendsUserId)
+    //     ]
+    //   )
+    //   friends.push(friendUserResponse)
+    // }))
+    // console.log(friends)
+    await databases.listDocuments(
+      DATABASEID,
+      COLLECTIONID_PROFILES,
+      [
+        Query.equal('userId',user.$id)
+      ]
+    ).then(
+      response=>{
+        console.log("user profile:",response)
+        const friendPromises = response.documents[0]['friends'].map(async (friend) => {
+          return await databases.listDocuments(
+            DATABASEID,
+            COLLECTIONID_PROFILES,
+            [Query.equal('userId', friend)]
+          );
+        });
+      
+        Promise.all(friendPromises).then(
+          response=>{
+            console.log("friendsList:",response)
+            setFriends(response);
+          }
+        )
+        console.log("final friends:",friends)
+      }
+    )
+  }
 
   const getMessages = async () => {
     const response = await databases.listDocuments(
       DATABASEID,
       COLLECTIONID_MESSAGES,
-      // [
-      //   Query.equal('from_user',user.$id),
-      // ]
+      [
+        Query.equal('from_user',user.$id),
+        // Query.equal('to_user',user.$id)
+      ]
     );
     console.log(response);
-    setMessages(response.documents);
+    const response2 = await databases.listDocuments(
+      DATABASEID,
+      COLLECTIONID_MESSAGES,
+      [
+        Query.equal('to_user',user.$id),
+      ]
+    )
+    setMessagesByMe(response.documents);
   };
 
   const [showFriendList, setShowFriendList] = useState(false);
@@ -85,7 +150,7 @@ function Room() {
       <div className="container">
         <div className="chatroom">
           <div className="chats">
-            {messages.map((messageObj) => (
+            {messagesByMe.map((messageObj) => (
               <div key={messageObj.$id} className="text-message">
                 <div className="message--body">
                   <div className="message-timestamp">
@@ -133,16 +198,21 @@ function Room() {
           <div className="friends-section">
             <h3>Friends</h3>
           </div>
-          <div className="friendListContent">
+          {friends.map((friend)=>(
+            <div className="friendListContent" id={friend['documents'][0].$id}>
             <div className="box">
               <div className="user-icon">
                 <img src="https://iili.io/JNkdzyx.png" alt="male user"></img>
               </div>
               <div className="user-name">
-                Bhavadeep
+                {friend['documents'][0]['username']}
+              </div>
+              <div className="user-tag">
+              #{friend['documents'][0]['tag']}
               </div>
             </div>
           </div>
+          ))}
           {/* add-friend section */}
 
           <div className="addFriend">

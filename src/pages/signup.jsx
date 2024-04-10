@@ -29,6 +29,7 @@ const Signup = () => {
                 let payload = {
                     userId : response.$id,
                     tag : tag,
+                    username : username,
                 }
                 databases.createDocument(
                     DATABASEID,

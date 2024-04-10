@@ -27,13 +27,13 @@ export const AuthProvider = ({children})=>{
 
     const handleUserLogin= async(e,userEmail, userPassword)=>{
         e.preventDefault()
-        // console.log(userEmail)
+        console.log(userEmail)
         try{
-            const response = await account.createEmailPasswordSession(userEmail,userPassword)
-            // console.log("response from verfication:",response)
+            const response = await account.createEmailSession(userEmail,userPassword)
+            console.log("response from verfication:",response)
             const accountDetails = await account.get();
             setUser(accountDetails)
-            // console.log("accountDetails:",accountDetails)
+            console.log("accountDetails:",accountDetails)
             navigate('/')
         }
         catch{
