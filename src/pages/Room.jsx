@@ -18,9 +18,8 @@ import { ChevronsLeft, ChevronsRight, Check, X } from "react-feather";
 
 function Room() {
   const { user, handleUserLogin, handleUserLogout } = useAuth()
-  // console.log('user id:',user.$id)
   const [messagesByMe, setMessagesByMe] = useState([]);
-  const [profileInfo, setProfileInfo] = useState(null);
+  const [allMessages, setAllMessages] = useState([]);
   const [messagesToMe, setMessagesToMe] = useState([]);
   const [messageBody, setMessageBody] = useState("");
   const [friends, setFriends] = useState([]);
@@ -36,21 +35,47 @@ function Room() {
   const [currFrndReqId, setCurrFrndReqId] = useState('');
 
   const [hasFrndReq, setHasFrndReq] = useState(false);
+  const [chatterId, setChatterId] = useState('');
+
+  const [showMessages, setShowMessages] = useState([]);
 
   useEffect(() => {
     getMessages();
     getProfileData();
     getUserInfo();
     getUserFrndReqs();
-    // intialiseFrndReq();
-    // console.log('proflie data in useEffect1:',profileInfo)
     const unsubscribe = client.subscribe(`databases.${DATABASEID}.collections.${COLLECTIONID_MESSAGES}.documents`, response => {
       if (response.events.includes('databases.*.collections.*.documents.*.create')) {
-        setMessagesByMe(prevState => [...prevState, response.payload]);
+        console.log("response from subscription:", response.payload);
+        if(response.payload['from_user']===user.$id || response.payload['to_user']===user.$id){
+          setAllMessages(prevState => [...prevState, response.payload]);
+        }
+        if(response.payload['from_user']===user.$id && response.payload['to_user']===chatterId){
+          let newpayload = {
+            'me':true,
+            'id' : response.payload.$id,
+            'timestamp': response.payload.$createdAt,
+            'message': response.payload.message
+          }
+          setShowMessages(prevState => [...prevState, newpayload])
+          console.log('new message added')
+        }
+        if(response.payload['from_user']===chatterId && response.payload['to_user']===user.$id){
+          let newpayload = {
+            'me':false,
+            'id' : response.payload.$id,
+            'timestamp': response.payload.$createdAt,
+            'message': response.payload.message
+          }
+          setShowMessages(prevState => [...prevState, newpayload])
+          
+        }
       }
       if (response.events.includes('databases.*.collections.*.documents.*.delete')) {
-        setMessagesByMe(messagesByMe.filter(message => message.$id !== response.payload.$id));
-        setMessagesToMe(messagesByMe.filter(message => message.$id !== response.payload.$id));
+        console.log("response from subscription delete:", response.payload);
+        setAllMessages(allMessages.filter(message=> message.$id != response.payload.$id));
+        setShowMessages(showMessages.filter(message => message.id != response.payload.$id));
+        getMessages();
       }
     });
     return () => {
@@ -67,6 +92,8 @@ function Room() {
     if (messageBody) {
       let payload = {
         message: messageBody,
+        from_user: user.$id,
+        to_user: chatterId
       };
       const response = await databases.createDocument(
         DATABASEID,
@@ -75,6 +102,7 @@ function Room() {
         payload
       );
       setMessageBody('');
+      renderPersonalChats();
       // setMessagesByMe(prevState=>[response,...prevState])
     }
 
@@ -85,8 +113,8 @@ function Room() {
     e.preventDefault();
     try {
       if (reqFriendTag.length !== 0 && reqFriendUserName.length !== 0) {
-        console.log('reqFriendTag', reqFriendTag)
-        console.log('reqFriendUserName', reqFriendUserName)
+        // console.log('reqFriendTag', reqFriendTag)
+        // console.log('reqFriendUserName', reqFriendUserName)
         const response = await databases.listDocuments(
           DATABASEID,
           COLLECTIONID_PROFILES,
@@ -98,22 +126,22 @@ function Room() {
         let frndRequestUserId = response['documents'][0].$id
         let frndprofileId = response['documents'][0]['userId']
         let alreadFriend = false
-        for(let i=0;i<friends.length;i++){
-          if(friends[i]['documents'][0]['userId']===frndprofileId){
-            alreadFriend=true
-            console.log("already your friend")
+        for (let i = 0; i < friends.length; i++) {
+          if (friends[i]['documents'][0]['userId'] === frndprofileId) {
+            alreadFriend = true
+            // console.log("already your friend")
           }
         }
-        console.log("is he already a friend:",alreadFriend)
+        // console.log("is he already a friend:", alreadFriend)
         if (frndRequestUserId && !alreadFriend) {
           const doc = await databases.getDocument(
             DATABASEID,
             COLLECTIONID_PROFILES,
             frndRequestUserId
           )
-          console.log('retrieved doc before:', doc)
+          // console.log('retrieved doc before:', doc)
           doc['FriendReqs'].push(user.$id);
-          console.log('retrieved doc after:', doc)
+          // console.log('retrieved doc after:', doc)
           const updateResponse = await databases.updateDocument(
             DATABASEID,
             COLLECTIONID_PROFILES,
@@ -123,10 +151,10 @@ function Room() {
             }
           )
         }
-        else{
+        else {
           console.log('not sent any frnd req');
         }
-        console.log('friendReq:', frndRequestUserId)
+        // console.log('friendReq:', frndRequestUserId)
         setReqFriendTag('')
         setReqFriendUserName('')
       }
@@ -169,7 +197,7 @@ function Room() {
       ]
     ).then(
       response => {
-        console.log("user profile:", response)
+        // console.log("user profile:", response)
         // setProfileInfo(response)
         // setUsername(response['documents'[0]['username']])
         // console.log('username:',response['documents'][0]['username'])
@@ -185,7 +213,7 @@ function Room() {
 
         Promise.all(friendPromises).then(
           response => {
-            console.log("friendsList:", response)
+            // console.log("friendsList:", response)
             setFriends(response);
           }
         )
@@ -215,7 +243,42 @@ function Room() {
       ]
     )
     setMessagesByMe(response.documents);
+    setMessagesToMe(response2.documents);
+    setAllMessages([...response.documents, ...response2.documents]);
+    console.log("retrieved bymeMessages:,",allMessages)
   };
+
+  // render personal chats
+  const renderPersonalChats=()=>{
+    const personalChats = []
+    for(let i =0; i< allMessages.length; i++){
+      if(allMessages[i]['from_user']===user.$id && allMessages[i]['to_user']===chatterId){
+        let somePayload = {
+          'me':true,
+          'id': allMessages[i].$id,
+          'timestamp': allMessages[i].$createdAt,
+          'message': allMessages[i]['message']
+        }
+        personalChats.push(somePayload)
+      }
+      if(allMessages[i]['to_user']===user.$id && allMessages[i]['from_user']===chatterId){
+        let somePayload = {
+          'me':false,
+          'id': allMessages[i].$id,
+          'timestamp': allMessages[i].$createdAt,
+          'message': allMessages[i]['message']
+        }
+        personalChats.push(somePayload)
+      }
+    }
+    personalChats.sort((a,b)=>{
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      return dateA-dateB;
+    })
+    console.log("personalChats:",personalChats)
+    setShowMessages(personalChats);
+  }
 
   const [showFriendList, setShowFriendList] = useState(false);
 
@@ -261,13 +324,13 @@ function Room() {
             setCurrFrndReqId(response[0]['documents'][0]['userId'])
             setCurrFrndReqTag(response[0]['documents'][0]['tag'])
             setCurrFrndReqUsername(response[0]['documents'][0]['username'])
-            console.log("intialised friendreqs")
+            // console.log("intialised friendreqs")
           }
-          console.log('friendReqs:', response);
+          // console.log('friendReqs:', response);
         }
       )
     }
-    console.log('has frnd req:', hasFrndReq)
+    // console.log('has frnd req:', hasFrndReq)
   }
 
   const handlePrevReq = (e) => {
@@ -304,7 +367,7 @@ function Room() {
         Query.equal('userId', user.$id)
       ]
     )
-    console.log('got profileId', docs)
+    // console.log('got profileId', docs)
     let doc = docs['documents'][0]
     let leftOverReqs = [];
     for (let i = 0; i < doc['FriendReqs'].length; i++) {
@@ -313,7 +376,7 @@ function Room() {
       }
     }
     // setFriendReqests(leftOverReqs)
-    console.log("friend reqs after adding:",leftOverReqs);
+    // console.log("friend reqs after adding:", leftOverReqs);
     if (leftOverReqs.length === 0) {
       setHasFrndReq(false);
     }
@@ -328,7 +391,7 @@ function Room() {
         'friends': currFriends
       }
     )
-    console.log('updated friendReqs', updateResponse)
+    // console.log('updated friendReqs', updateResponse)
 
     const docs2 = await databases.listDocuments(
       DATABASEID,
@@ -338,10 +401,10 @@ function Room() {
       ]
     )
     let doc2 = docs2['documents'][0]
-    console.log('got profileId2', docs2)
+    // console.log('got profileId2', docs2)
 
     let hisFriends = doc2['friends']
-    console.log('his friends', hisFriends);
+    // console.log('his friends', hisFriends);
     hisFriends.push(user.$id);
     const updateResponse2 = await databases.updateDocument(
       DATABASEID,
@@ -351,12 +414,12 @@ function Room() {
         'friends': hisFriends,
       }
     )
-    console.log('updated friends', updateResponse2)
+    // console.log('updated friends', updateResponse2)
     getUserFrndReqs();
     getProfileData();
   }
 
-  const handleDeleteReq = async(e)=>{
+  const handleDeleteReq = async (e) => {
     e.preventDefault();
     const docs = await databases.listDocuments(
       DATABASEID,
@@ -373,7 +436,7 @@ function Room() {
       }
     }
     // setFriendReqests(leftOverReqs)
-    console.log("friend reqs after adding:",leftOverReqs);
+    // console.log("friend reqs after adding:", leftOverReqs);
     if (leftOverReqs.length === 0) {
       setHasFrndReq(false);
     }
@@ -393,17 +456,20 @@ function Room() {
       <div className="container">
         <div className="chatroom">
           <div className="chats">
-            {messagesByMe.map((messageObj) => (
-              <div key={messageObj.$id} className="text-message">
-                <div className="message--body">
+            {showMessages.map((messageObj,index) => (
+              
+              <div key={index} className={`message ${messageObj.me ? 'me-message' : 'other-message'}`} >
+                {/* <div className="text-message"> */}
+                <div className={`${messageObj.me? 'message--body-me':'message--body-other'}`}>
                   <div className="message-timestamp">
-                    {new Date(messageObj.$createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                    {new Date(messageObj.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
                   <span>{messageObj.message}</span>
                 </div>
                 <div className="trash-button">
-                  <Trash className="delete--btn" size={16} onClick={() => { deleteMessage(messageObj.$id) }} />
+                  <Trash className="delete--btn" size={16} onClick={() => { deleteMessage(messageObj.id) }} />
                 </div>
+                {/* </div> */}
               </div>
             ))}
           </div>
@@ -447,7 +513,7 @@ function Room() {
           </div>
           {friends.map((friend) => (
             <div className="friendListContent" id={friend['documents'][0].$id}>
-              <div className="box">
+              <div className="box" onClick={(e) => { e.preventDefault(); setChatterId(friend['documents'][0]['userId']); console.log('chatterId:', chatterId); renderPersonalChats()}}>
                 <div className="user-icon">
                   <img src="https://iili.io/JNkdzyx.png" alt="male user"></img>
                 </div>
@@ -462,35 +528,35 @@ function Room() {
           ))}
           {/* Friend Requests */}
           <div className="friend-requests">
-          <div className="friend-req-header">
+            <div className="friend-req-header">
               <h3>Friend Requests</h3>
             </div>
             {hasFrndReq ? (<><div className="frnd-req-wrapper">
-                <div className="pointerOnHover">
-                  <ChevronsLeft color="white" onClick={handlePrevReq} />
-                </div>
-                <div className="friend-req-info">
-                  <div className="user-info">
-                    <div className="friend-req-name">
-                      {currFrndReqUsername}
-                    </div>
-                    <div className="friend-req-tag">
-                      #{currFrndReqTag}
-                    </div>
+              <div className="pointerOnHover">
+                <ChevronsLeft color="white" onClick={handlePrevReq} />
+              </div>
+              <div className="friend-req-info">
+                <div className="user-info">
+                  <div className="friend-req-name">
+                    {currFrndReqUsername}
                   </div>
-                  <div className="accept-decline">
-                    <div className="pointerOnHover">
-                      <X color="red" onClick={handleDeleteReq}/>
-                    </div>
-                    <div className="pointerOnHover">
-                      <Check color="green" onClick={handleAddFriend} />
-                    </div>
+                  <div className="friend-req-tag">
+                    #{currFrndReqTag}
                   </div>
                 </div>
-                <div className="pointerOnHover">
-                  <ChevronsRight color="white" onClick={handleNextReq} />
+                <div className="accept-decline">
+                  <div className="pointerOnHover">
+                    <X color="red" onClick={handleDeleteReq} />
+                  </div>
+                  <div className="pointerOnHover">
+                    <Check color="green" onClick={handleAddFriend} />
+                  </div>
                 </div>
-              </div></>) : (<h1>EMPTY</h1>)}
+              </div>
+              <div className="pointerOnHover">
+                <ChevronsRight color="white" onClick={handleNextReq} />
+              </div>
+            </div></>) : (<h1>EMPTY</h1>)}
           </div>
 
           {/* add-friend section */}
